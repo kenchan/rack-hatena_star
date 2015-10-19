@@ -7,31 +7,29 @@ module Rack
     end
 
     def call(env)
-      status, headers, response = @app.call(env)
+      status, headers, body = @app.call(env)
+      return [status, headers, body] unless html?(headers)
 
-      if success?(status) && html?(headers)
-        body = response.body.sub('</head>', <<-EOS.strip_heredoc)
-          <script type="text/javascript" src="http://s.hatena.ne.jp/js/HatenaStar.js"></script>
+      res = Rack::Response.new([], status, headers)
+
+      body.each do |b|
+        res.write(b.sub('</head>', <<-EOS))
+          <script type="text/javascript" src="//s.hatena.ne.jp/js/HatenaStar.js"></script>
           <script type="text/javascript">
-            Hatena.Star.Token = '#{@options[:token]}';
+            Hatena.Star.Token = "#{@options[:token]}";
             Hatena.Star.SiteConfig = {
               entryNodes: #{@options[:entry_nodes].to_json}
             };
           </script>
           </head>
         EOS
-
-        [status, headers, [body]]
-      else
-        [status, headers, response]
       end
+      body.close if body.respond_to? :close
+
+      res.finish
     end
 
     private
-
-    def success?(status)
-      status == 200
-    end
 
     def html?(headers)
       headers['Content-Type'] =~ /text\/html/
