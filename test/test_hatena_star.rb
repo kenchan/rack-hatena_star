@@ -51,7 +51,6 @@ class RackHatenaStarTest < Test::Unit::TestCase
   def test_set_entry_nodes
     get '/'
 
-    puts last_response.body
     assert last_response.body.include? @entry_nodes.to_json
   end
 end
