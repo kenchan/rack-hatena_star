@@ -9,6 +9,7 @@ module Rack
     def call(env)
       status, headers, body = @app.call(env)
       return [status, headers, body] unless html?(headers)
+      return [status, headers, body] if amp?(body)
 
       res = Rack::Response.new([], status, headers)
 
@@ -33,6 +34,10 @@ module Rack
 
     def html?(headers)
       headers['Content-Type'] =~ /text\/html/
+    end
+
+    def amp?(body)
+      body.start_with?(%r(<!doctype html>\s*<html (⚡|amp)>))
     end
   end
 end
